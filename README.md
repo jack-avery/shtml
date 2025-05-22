@@ -4,9 +4,11 @@ a simple shell script for generating static websites.
 
 ## usage
 
-1. create a new project in your current directory with `shtml n`
-2. make some stuff in `static`
-3. run `shtml b`
-4. observe your generated site in `generated`
+1. `git clone` this repository
+2. run `sudo make install`
+3. move to a fresh directory, and create a new project with `shtml n`
+4. put your stuff in `static`
+5. run `shtml b`
+6. observe your generated site in `generated`
 
 > `static` and `generated` above can be swapped out for whatever you like in `shtml.conf`
