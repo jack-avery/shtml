@@ -1,0 +1,194 @@
+#!/bin/sh
+# shtml: static html renderer in pure sh
+# version: 0.0.1
+
+VERSION='v0.0.1'
+
+set -e
+
+c_reset='\033[m'      # Reset
+c_grey='\033[0;90m'   # Grey (logs)
+c_yellow='\033[1;33m' # Bold yellow (warnings)
+c_red='\033[1;31m'    # Bold red (errors)
+
+info() {
+	[ "${SHTML_VERBOSE:-0}" -eq 1 ] || return 0
+	printf '%b%s %s%b\n' "$c_grey" "INFO:" "$*" "$c_reset" >&2
+}
+warn() { printf '%b%s %b%s%b\n' "$c_yellow" "WARNING:" "$c_reset" "$*" "$c_reset" >&2; }
+die() { printf '%b%s %b%s%b\n' "$c_red" "ERROR:" "$c_reset" "$*" "$c_reset" >&2; exit 1; }
+
+create_new_project() {
+	config="$CWD/shtml.conf"
+	if [ ! -f "$config" ]; then
+		echo "Creating new project in current directory"
+
+		info "Creating $config"
+		cat > $config << EOF
+# shtml config file
+# generated using v0.0.1
+
+# Site name
+SHTML_SITE="My website"
+
+# Use verbose logging (0/1)
+SHTML_VERBOSE=0
+
+# Input folder (no slash)
+SHTML_IN=static
+
+# Output folder (no slash)
+SHTML_OUT=generated
+
+# Templates folder (no slash)
+SHTML_TEMPLATES=templates
+
+# Arguments to pass to pandoc for each call
+SHTML_PANDOC_ARGS=''
+
+# Build clean every time (0/1)
+SHTML_CLEAN=1
+EOF
+
+		info "Creating base static content"
+		[ ! -d "$CWD/static" ] && mkdir "$CWD/static"
+		[ ! -f "$CWD/static/index.md" ] && cat > "$CWD/static/index.md" << EOF
+The first line is the page title!
+
+This becomes the HTML body. You have the full suite of \`pandoc\` conversions.
+
+Inspect the default template at \`templates/page.html\`:
+
+- it looks for your CSS at \`static/css/style.css\`, 
+- and favicon at \`static/favicon.ico\`.
+
+Modify the page template to your liking, make some pages, create some CSS, run \`shtml b\`, and enjoy!
+
+Markdown files will take priority over HTML files if there is a collision.
+EOF
+
+		info "Creating base templates"
+		[ ! -d "$CWD/templates" ] && mkdir "$CWD/templates"
+		[ ! -f "$CWD/templates/page.html" ] && cat > "$CWD/templates/page.html" << EOF
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <link rel="stylesheet" href="/css/style.css" />
+        <meta charset="utf-8" />
+        <link rel="shortcut icon" href="/favicon.ico" />
+        <meta name="viewport" content="initial-scale=1, width=device-width" />
+        <title>%SITE% | %TITLE%</title>
+    </head>
+
+    <body>
+        <header>
+            %HEADER%
+        </header>
+
+        %BODY%
+
+        <footer>
+            %FOOTER%
+        </footer>
+    </body>
+</html>
+EOF
+
+		[ ! -f "$CWD/templates/header.md" ] && cat > "$CWD/templates/header.md" << EOF
+# My new static website
+
+This is a header defined at \`templates/header.md\` (or .html) that will show up on every page.
+
+---
+EOF
+
+		[ ! -f "$CWD/templates/footer.md" ] && cat > "$CWD/templates/footer.md" << EOF
+---
+
+This is a footer defined at \`templates/footer.md\` (or .html) that will show up on every page.
+
+:c: you, current year
+EOF
+
+	# ... if a project already exists and new is called
+	else
+		printf "Project already exists. Overwrite configuration with defaults? [y/N] "
+		read -r response
+		case "$response" in
+			[yY]*) rm "$config" && create_new_project ;;
+		esac
+	fi
+}
+
+clean() {
+	info "Cleaning"
+	[ ! -d "$SHTML_OUT" ] && info "Nothing to clean" && return 0
+	rm -vr "$SHTML_OUT"
+	info "Cleaned"
+}
+
+build() {
+	info "Performing pre-build checks"
+
+	command -v pandoc >/dev/null 2>&1 || die "pandoc is not installed, cannot continue."
+	[ ! -f "$SHTML_TEMPLATES/page.html" ] && die "Missing templates/page.html"
+	[ ! -f "$SHTML_TEMPLATES/header.md" ] && [ ! -f "$SHTML_TEMPLATES/header.html" ] && die "No templates/header.md or templates/header.html"
+	[ ! -f "$SHTML_TEMPLATES/footer.md" ] && [ ! -f "$SHTML_TEMPLATES/footer.html" ] && die "No templates/footer.md or templates/footer.html"
+	[ "$SHTML_IN" = "temp" ] && die "'temp' is a reserved folder: please choose a different folder for SHTML_IN"
+	[ "$SHTML_OUT" = "temp" ] && die "'temp' is a reserved folder: please choose a different folder for SHTML_OUT"
+	[ "$SHTML_TEMPLATES" = "temp" ] && die "'temp' is a reserved folder: please choose a different folder for SHTML_TEMPLATES"
+	[ "${SHTML_CLEAN:-1}" -eq 1 ] && clean
+
+	info "Pre-build checks passed"
+
+	echo "Building for $CWD..."
+
+	[ -d temp ] && rm -r temp
+	mkdir temp
+
+	info "Using pandoc to convert .md files"
+	[ -f "$SHTML_TEMPLATES/header.md" ] && pandoc $SHTML_PANDOC_ARGS "$SHTML_TEMPLATES/header.md" > 'temp/header.html' || cp "$SHTML_TEMPLATES/header.html" 'temp/header.html'
+	[ -f "$SHTML_TEMPLATES/footer.md" ] && pandoc $SHTML_PANDOC_ARGS "$SHTML_TEMPLATES/footer.md" > 'temp/footer.html' || cp "$SHTML_TEMPLATES/footer.html" 'temp/footer.html'
+	cp "$SHTML_TEMPLATES/page.html" 'temp/page.html'
+
+	cp -r "$SHTML_IN" temp/generated
+	cd temp
+	find -type f -name '*.md' -exec sh -c 'file="${1%.*}"; \
+		title=$(head -n 1 $1); \
+		pandoc $2 $file.md > working; \
+		rm $file.md; \
+		tail -n +2 working > working2; \
+		sed -e "/%BODY%/r working2" -e "/%BODY%/d" page.html > $file.html; \
+		sed -i -e "s/%SITE%/$3/" $file.html; \
+		sed -i -e "s/%TITLE%/$title/" $file.html; \
+		sed -i -e "/%HEADER%/r header.html" -e "/%HEADER%/d" $file.html; \
+		sed -i -e "/%FOOTER%/r footer.html" -e "/%FOOTER%/d" $file.html' shell {} "$SHTML_PANDOC_ARGS" "$SHTML_SITE" \;
+
+	info "Generation complete, cleaning up"
+	cp -r generated ..
+	cd ..
+	rm -r temp
+
+	echo "Done"
+}
+
+args() {
+	case $1 in
+		n|new) shift; create_new_project ;;
+		c|clean) shift; clean ;;
+		b|build) shift; build ;;
+		v|version) shift; echo "$VERSION" ;;
+		*) echo "shtml h for help"; exit 1 ;;
+	esac
+}
+
+main() {
+	CWD=$PWD
+
+	[ -f "$CWD/shtml.conf" ] && . "$CWD/shtml.conf"
+
+	args "$@"
+}
+
+main "$@"
