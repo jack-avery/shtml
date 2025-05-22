@@ -40,7 +40,7 @@ create_new_project() {
 		info "Creating $config"
 		cat > $config << EOF
 # shtml config file
-# generated using v0.0.1
+# generated using $VERSION
 
 # Site name
 SHTML_SITE="My website"
