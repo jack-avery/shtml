@@ -1,8 +1,8 @@
 #!/bin/sh
-# shtml: static html renderer in pure sh
-# version: 0.0.1
+# shtml: shell static md -> html renderer
+# version: 1.0.0
 
-VERSION='v0.0.1'
+VERSION='v1.0.0'
 
 set -e
 
@@ -122,10 +122,10 @@ EOF
 }
 
 clean() {
-	info "Cleaning"
+	warn "Cleaning"
 	[ ! -d "$SHTML_OUT" ] && info "Nothing to clean" && return 0
 	rm -vr "$SHTML_OUT"
-	info "Cleaned"
+	info "Clean completed"
 }
 
 build() {
@@ -173,11 +173,27 @@ build() {
 	echo "Done"
 }
 
+shtml_help() {
+	cat << HELP
+shtml $VERSION
+
+usage: shtml [arg]
+
+arguments:
+    n, new             create a new project in your current directory
+    c, clean           clean up generated files in the current directory
+    b, build           build static content
+    h, help            show this message
+    v, version         print version, and exit
+HELP
+}
+
 args() {
 	case $1 in
 		n|new) shift; create_new_project ;;
 		c|clean) shift; clean ;;
 		b|build) shift; build ;;
+		h|help) shift; shtml_help ;;
 		v|version) shift; echo "$VERSION" ;;
 		*) echo "shtml h for help"; exit 1 ;;
 	esac
