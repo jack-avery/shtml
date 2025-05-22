@@ -16,7 +16,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-VERSION='v1.0.1'
+VERSION='v1.0.2'
 
 set -e
 
@@ -169,15 +169,15 @@ build() {
 	cp -r "$SHTML_IN" temp/generated
 	cd temp
 	find -type f -name '*.md' -exec sh -c 'file="${1%.*}"; \
-		title=$(head -n 1 $1); \
-		pandoc $2 $file.md > working; \
-		rm $file.md; \
+		title=$(head -n 1 "$1"); \
+		pandoc $2 "$file.md" > working; \
+		rm "$file.md"; \
 		tail -n +2 working > working2; \
-		sed -e "/%BODY%/r working2" -e "/%BODY%/d" page.html > $file.html; \
-		sed -i -e "s/%SITE%/$3/" $file.html; \
-		sed -i -e "s/%TITLE%/$title/" $file.html; \
-		sed -i -e "/%HEADER%/r header.html" -e "/%HEADER%/d" $file.html; \
-		sed -i -e "/%FOOTER%/r footer.html" -e "/%FOOTER%/d" $file.html' shell {} "$SHTML_PANDOC_ARGS" "$SHTML_SITE" \;
+		sed -e "/%BODY%/r working2" -e "/%BODY%/d" page.html > "$file.html"; \
+		sed -i -e "s/%SITE%/$3/" "$file.html"; \
+		sed -i -e "s/%TITLE%/$title/" "$file.html"; \
+		sed -i -e "/%HEADER%/r header.html" -e "/%HEADER%/d" "$file.html"; \
+		sed -i -e "/%FOOTER%/r footer.html" -e "/%FOOTER%/d" "$file.html"' shell {} "$SHTML_PANDOC_ARGS" "$SHTML_SITE" \;
 
 	info "Generation complete, cleaning up"
 	mv generated "../$SHTML_OUT"
