@@ -16,7 +16,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-VERSION='v1.0.2'
+VERSION='v1.1.0'
 
 set -e
 
@@ -62,6 +62,12 @@ SHTML_PANDOC_ARGS=''
 
 # Build clean every time (0/1)
 SHTML_CLEAN=1
+
+# Whether to use Docker or Podman for shtml s (empty = autodetect)
+SHTML_S=''
+
+# Local port to host the website on
+SHTML_S_PORT=8080
 EOF
 
 		info "Creating base static content"
@@ -187,6 +193,12 @@ build() {
 	echo "Done"
 }
 
+serve() {
+	cmd_s=${SHTML_S:-"$(command -v podman || command -v docker)"} || die "Neither Podman or Docker detected, cannot serve."
+
+	$cmd_s run --rm -v ./generated:/usr/share/nginx/html -p "${SHTML_S_PORT:-8080}:80" docker.io/nginx
+}
+
 shtml_help() {
 	cat << HELP
 shtml $VERSION
@@ -197,6 +209,7 @@ arguments:
     n, new             create a new project in your current directory
     c, clean           clean up generated files in the current directory
     b, build           build static content
+    s, serve           quick-start an NGINX container
     h, help            show this message
     v, version         print version, and exit
 HELP
@@ -207,6 +220,7 @@ args() {
 		n|new) shift; create_new_project ;;
 		c|clean) shift; clean ;;
 		b|build) shift; build ;;
+		s|serve) shift; serve ;;
 		h|help) shift; shtml_help ;;
 		v|version) shift; echo "$VERSION" ;;
 		*) shtml_help; exit 1 ;;
