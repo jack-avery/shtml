@@ -2,6 +2,12 @@
 
 a simple shell script for generating static websites.
 
+## disclaimer
+
+this was made as a learning project for posix shell. it may not actually be fully posix compliant.
+
+`shellcheck` doesn't get upset at me, but your mileage may vary
+
 ## usage
 
 1. `git clone` this repository
