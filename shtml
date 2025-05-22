@@ -16,7 +16,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-VERSION='v1.1.1'
+VERSION='v1.1.2'
 
 set -e
 
@@ -152,9 +152,9 @@ build() {
 	info "Performing pre-build checks"
 
 	command -v pandoc >/dev/null 2>&1 || die "pandoc is not installed, cannot continue."
-	[ ! -f "$SHTML_TEMPLATES/page.html" ] && die "Missing templates/page.html"
-	[ ! -f "$SHTML_TEMPLATES/header.md" ] && [ ! -f "$SHTML_TEMPLATES/header.html" ] && die "No templates/header.md or templates/header.html"
-	[ ! -f "$SHTML_TEMPLATES/footer.md" ] && [ ! -f "$SHTML_TEMPLATES/footer.html" ] && die "No templates/footer.md or templates/footer.html"
+	[ ! -f "$SHTML_TEMPLATES/page.html" ] && die "Missing $SHTML_TEMPLATES/page.html"
+	[ ! -f "$SHTML_TEMPLATES/header.md" ] && [ ! -f "$SHTML_TEMPLATES/header.html" ] && die "No $SHTML_TEMPLATES/header.md or $SHTML_TEMPLATES/header.html"
+	[ ! -f "$SHTML_TEMPLATES/footer.md" ] && [ ! -f "$SHTML_TEMPLATES/footer.html" ] && die "No $SHTML_TEMPLATES/footer.md or $SHTML_TEMPLATES/footer.html"
 	[ "$SHTML_IN" = "temp" ] && die "'temp' is a reserved folder: please choose a different folder for SHTML_IN"
 	[ "$SHTML_OUT" = "temp" ] && die "'temp' is a reserved folder: please choose a different folder for SHTML_OUT"
 	[ "$SHTML_TEMPLATES" = "temp" ] && die "'temp' is a reserved folder: please choose a different folder for SHTML_TEMPLATES"
@@ -233,7 +233,15 @@ args() {
 main() {
 	CWD=$PWD
 
-	[ -f "$CWD/shtml.conf" ] && . "$CWD/shtml.conf"
+	while [ ! -f shtml.conf ]; do
+		prev="$PWD"
+		cd ..
+		[ "$PWD" = "$prev" ] && break # so we're not looping forever
+		[ -f shtml.conf ] && CWD=$PWD && break
+	done
+
+	cd "$CWD"
+	[ -f shtml.conf ] && . "$PWD/shtml.conf"
 
 	args "$@"
 }
