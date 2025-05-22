@@ -18,3 +18,7 @@ this was made as a learning project for posix shell. it may not actually be full
 6. observe your generated site in `generated`
 
 > `static` and `generated` above can be swapped out for whatever you like in `shtml.conf`
+
+## todo
+
+[ ] autodetect shtml.conf in parent directories and perform actions relative to that directory
