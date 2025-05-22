@@ -16,7 +16,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-VERSION='v1.1.0'
+VERSION='v1.1.1'
 
 set -e
 
@@ -196,6 +196,9 @@ build() {
 serve() {
 	cmd_s=${SHTML_S:-"$(command -v podman || command -v docker)"} || die "Neither Podman or Docker detected, cannot serve."
 
+	cmd_xdg_open=$(command -v xdg-open || true)
+
+	$cmd_xdg_open "http://localhost:$SHTML_S_PORT" &&
 	$cmd_s run --rm -v ./generated:/usr/share/nginx/html -p "${SHTML_S_PORT:-8080}:80" docker.io/nginx
 }
 
