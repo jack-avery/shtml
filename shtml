@@ -209,7 +209,7 @@ args() {
 		b|build) shift; build ;;
 		h|help) shift; shtml_help ;;
 		v|version) shift; echo "$VERSION" ;;
-		*) echo "shtml h for help"; exit 1 ;;
+		*) shtml_help; exit 1 ;;
 	esac
 }
 
