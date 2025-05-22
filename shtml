@@ -16,7 +16,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-VERSION='v1.0.0'
+VERSION='v1.0.1'
 
 set -e
 
@@ -38,7 +38,7 @@ create_new_project() {
 		echo "Creating new project in current directory"
 
 		info "Creating $config"
-		cat > $config << EOF
+		cat > "$config" << EOF
 # shtml config file
 # generated using $VERSION
 
@@ -180,7 +180,7 @@ build() {
 		sed -i -e "/%FOOTER%/r footer.html" -e "/%FOOTER%/d" $file.html' shell {} "$SHTML_PANDOC_ARGS" "$SHTML_SITE" \;
 
 	info "Generation complete, cleaning up"
-	cp -r generated ..
+	mv generated "../$SHTML_OUT"
 	cd ..
 	rm -r temp
 
