@@ -209,7 +209,7 @@ serve() {
 	cmd_s=${SHTML_S:-"$(command -v podman || command -v docker)"} || die "Neither Podman or Docker detected, cannot serve."
 	[ ! -e "./$SHTML_OUT" ] && die "No generated content to serve. Run \`shtml b\` first"
 
-	info "Serving using $SHTML_S"
+	info "Serving using $cmd_s"
 
 	cmd_xdg_open=$(command -v xdg-open || true)
 
