@@ -16,12 +16,12 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-VERSION='v1.1.3'
+VERSION='v1.1.4'
 
 set -e
 
 c_reset='\033[m'      # Reset
-c_grey='\033[0;90m'   # Grey (logs)
+c_grey='\033[0;90m'   # Grey (info logs)
 c_yellow='\033[1;33m' # Bold yellow (warnings)
 c_red='\033[1;31m'    # Bold red (errors)
 
@@ -144,15 +144,14 @@ EOF
 }
 
 clean() {
-	warn "Cleaning"
 	[ ! -d "$SHTML_OUT" ] && info "Nothing to clean" && return 0
+	warn "Cleaning"
 	rm -vr "$SHTML_OUT"
 	info "Clean completed"
 }
 
 build() {
 	info "Performing pre-build checks"
-
 	command -v pandoc >/dev/null 2>&1 || die "pandoc is not installed, cannot continue."
 	[ ! -f "$SHTML_TEMPLATES/page.html" ] && die "Missing $SHTML_TEMPLATES/page.html"
 	[ ! -f "$SHTML_TEMPLATES/header.md" ] && [ ! -f "$SHTML_TEMPLATES/header.html" ] && die "No $SHTML_TEMPLATES/header.md or $SHTML_TEMPLATES/header.html"
@@ -161,15 +160,15 @@ build() {
 	[ "$SHTML_OUT" = "temp" ] && die "'temp' is a reserved folder: please choose a different folder for SHTML_OUT"
 	[ "$SHTML_TEMPLATES" = "temp" ] && die "'temp' is a reserved folder: please choose a different folder for SHTML_TEMPLATES"
 	[ "${SHTML_CLEAN:-1}" -eq 1 ] && clean
-
 	info "Pre-build checks passed"
 
 	echo "Building for $CWD..."
 
+	info "(Re)making temp folder"
 	[ -d temp ] && rm -r temp
 	mkdir temp
 
-	info "Using pandoc to convert .md files"
+	info "Converting templates"
 	if [ -f "$SHTML_TEMPLATES/header.md" ]; then
 		pandoc $SHTML_PANDOC_ARGS "$SHTML_TEMPLATES/header.md" > 'temp/header.html'
 	else
@@ -182,7 +181,10 @@ build() {
 	fi
 	cp "$SHTML_TEMPLATES/page.html" 'temp/page.html'
 
+	info "Copying site content"
 	cp -r "$SHTML_IN" temp/generated
+
+	info "Converting pages"
 	cd temp
 	find -type f -name '*.md' -exec sh -c 'file="${1%.*}"; \
 		title=$(head -n 1 "$1"); \
@@ -195,7 +197,7 @@ build() {
 		sed -e "/%HEADER%/r header.html" -e "/%HEADER%/d" "$file.html" 1<> "$file.html"; \
 		sed -e "/%FOOTER%/r footer.html" -e "/%FOOTER%/d" "$file.html" 1<> "$file.html"' shell {} "$SHTML_PANDOC_ARGS" "$SHTML_SITE" \;
 
-	info "Generation complete, cleaning up"
+	info "Conversion complete, cleaning up"
 	mv generated "../$SHTML_OUT"
 	cd ..
 	rm -r temp
@@ -206,6 +208,8 @@ build() {
 serve() {
 	cmd_s=${SHTML_S:-"$(command -v podman || command -v docker)"} || die "Neither Podman or Docker detected, cannot serve."
 	[ ! -e "./$SHTML_OUT" ] && die "No generated content to serve. Run \`shtml b\` first"
+
+	info "Serving using $SHTML_S"
 
 	cmd_xdg_open=$(command -v xdg-open || true)
 
