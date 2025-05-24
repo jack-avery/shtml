@@ -131,6 +131,8 @@ This is a footer defined at \`templates/footer.md\` (or .html) that will show up
 :c: you, current year
 EOF
 
+		echo "Run \`shtml b\` to build, and \`shtml s\` to serve (requires podman or docker)"
+
 	# ... if a project already exists and new is called
 	else
 		printf "Project already exists. Overwrite configuration with defaults? [y/N] "
@@ -168,8 +170,16 @@ build() {
 	mkdir temp
 
 	info "Using pandoc to convert .md files"
-	[ -f "$SHTML_TEMPLATES/header.md" ] && pandoc $SHTML_PANDOC_ARGS "$SHTML_TEMPLATES/header.md" > 'temp/header.html' || cp "$SHTML_TEMPLATES/header.html" 'temp/header.html'
-	[ -f "$SHTML_TEMPLATES/footer.md" ] && pandoc $SHTML_PANDOC_ARGS "$SHTML_TEMPLATES/footer.md" > 'temp/footer.html' || cp "$SHTML_TEMPLATES/footer.html" 'temp/footer.html'
+	if [ -f "$SHTML_TEMPLATES/header.md" ]; then
+		pandoc $SHTML_PANDOC_ARGS "$SHTML_TEMPLATES/header.md" > 'temp/header.html'
+	else
+		cp "$SHTML_TEMPLATES/header.html" 'temp/header.html'
+	fi
+	if [ -f "$SHTML_TEMPLATES/footer.md" ]; then
+		pandoc $SHTML_PANDOC_ARGS "$SHTML_TEMPLATES/footer.md" > 'temp/footer.html'
+	else
+		cp "$SHTML_TEMPLATES/footer.html" 'temp/footer.html'
+	fi
 	cp "$SHTML_TEMPLATES/page.html" 'temp/page.html'
 
 	cp -r "$SHTML_IN" temp/generated
@@ -180,10 +190,10 @@ build() {
 		rm "$file.md"; \
 		tail -n +2 working > working2; \
 		sed -e "/%BODY%/r working2" -e "/%BODY%/d" page.html > "$file.html"; \
-		sed -i -e "s/%SITE%/$3/" "$file.html"; \
-		sed -i -e "s/%TITLE%/$title/" "$file.html"; \
-		sed -i -e "/%HEADER%/r header.html" -e "/%HEADER%/d" "$file.html"; \
-		sed -i -e "/%FOOTER%/r footer.html" -e "/%FOOTER%/d" "$file.html"' shell {} "$SHTML_PANDOC_ARGS" "$SHTML_SITE" \;
+		sed -e "s/%SITE%/$3/" "$file.html" 1<> "$file.html"; \
+		sed -e "s/%TITLE%/$title/" "$file.html" 1<> "$file.html"; \
+		sed -e "/%HEADER%/r header.html" -e "/%HEADER%/d" "$file.html" 1<> "$file.html"; \
+		sed -e "/%FOOTER%/r footer.html" -e "/%FOOTER%/d" "$file.html" 1<> "$file.html"' shell {} "$SHTML_PANDOC_ARGS" "$SHTML_SITE" \;
 
 	info "Generation complete, cleaning up"
 	mv generated "../$SHTML_OUT"
@@ -195,6 +205,7 @@ build() {
 
 serve() {
 	cmd_s=${SHTML_S:-"$(command -v podman || command -v docker)"} || die "Neither Podman or Docker detected, cannot serve."
+	[ ! -e "./$SHTML_OUT" ] && die "No generated content to serve. Run \`shtml b\` first"
 
 	cmd_xdg_open=$(command -v xdg-open || true)
 
